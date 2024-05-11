@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Online Drawing App</title>
+  <style>
+    #canvas {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="800" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const socket = new WebSocket('ws://localhost:3000'); // заменить на адрес вашего сервера
+
+    socket.onopen = () => {
+      console.log('Соединение установлено');
+
+      canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (e.buttons === 1) {
+          ctx.lineTo(x, y);
+          ctx.stroke();
+
+          socket.send(JSON.stringify({ x, y }));
+        }
+      });
+
+      canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        
+        socket.send(JSON.stringify({ x, y }));
+      });
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        ctx.lineTo(data.x, data.y);
+        ctx.stroke();
+      };
+    };
+
+    socket.onclose = () => {
+      console.log('Соединение закрыто');
+    };
+  </script>
+</body>
+</html>
